@@ -10,6 +10,25 @@ export const metadata: Metadata = {
   description: "High-performance song download and audio streaming API engineered for Telegram music bots and developers.",
 };
 
+const LAUDA_BANNER = `<!--
+========================================================================================
+
+  _        _    _   _ _____            
+ | |      / \  | | | |  __ \   /\      
+ | |     / _ \ | | | | |  | | /  \     
+ | |    / ___ \| |_| | |__| |/ /\ \    
+ | |___/_/   \_\\___/|_____//_/  \_\   
+
+ ██╗      █████╗ ██╗   ██╗██████╗  █████╗ 
+ ██║     ██╔══██╗██║   ██║██╔══██╗██╔══██╗
+ ██║     ███████║██║   ██║██║  ██║███████║
+ ██║     ██╔══██║██║   ██║██║  ██║██╔══██║
+ ███████╗██║  ██║╚██████╔╝██████╔╝██║  ██║
+ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝
+
+========================================================================================
+-->`;
+
 export default function RootLayout({
   children,
 }: {
@@ -19,8 +38,24 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `/*
+========================================================================================
+
+  _        _    _   _ _____            
+ | |      / \  | | | |  __ \   /\      
+ | |     / _ \ | | | | |  | | /  \     
+ | |    / ___ \| |_| | |__| |/ /\ \    
+ | |___/_/   \_\\___/|_____//_/  \_\   
+
+========================================================================================
+*/`,
+          }}
+        />
       </head>
-      <body className="min-h-screen flex flex-col bg-[#020617] text-slate-100 antialiased">
+      <body className="min-h-screen flex flex-col bg-[#030712] text-slate-100 antialiased">
+        <div dangerouslySetInnerHTML={{ __html: LAUDA_BANNER }} />
         <AuthProvider>
           <Navbar />
           <main className="flex-1">{children}</main>

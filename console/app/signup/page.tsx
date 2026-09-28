@@ -19,10 +19,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="min-h-[85vh] flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fade-in">
       <Link
         href="/"
         className="absolute top-6 left-6 sm:top-10 sm:left-10 flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
@@ -31,9 +28,9 @@ export default function SignupPage() {
         Back to Home
       </Link>
 
-      <div className="glass-card rounded-2xl border border-slate-800 p-8 w-full max-w-md shadow-2xl relative z-10 space-y-6">
+      <div className="glass-card rounded-2xl border border-slate-800 p-8 w-full max-w-md shadow-xl relative z-10 space-y-6 animate-slide-up">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 mb-1">
+          <div className="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md mb-1">
             <Music2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-extrabold text-white">Create Developer Account</h1>
@@ -65,7 +62,7 @@ export default function SignupPage() {
                 placeholder="Developer Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
           </div>
@@ -82,7 +79,7 @@ export default function SignupPage() {
                 placeholder="developer@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
           </div>
@@ -99,14 +96,14 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wider uppercase shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wider uppercase shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
             Create Free Account

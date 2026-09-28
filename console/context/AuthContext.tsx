@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: (credential: string) => void;
+  loginWithGoogleUser: (data: { email: string; name: string; avatar?: string }) => void;
   loginWithEmail: (email: string, name?: string) => void;
   logout: () => void;
 }
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   loginWithGoogle: () => {},
+  loginWithGoogleUser: () => {},
   loginWithEmail: () => {},
   logout: () => {},
 });
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const payload = parseJwt(credential);
     if (payload && payload.email) {
       const newUser: User = {
-        email: payload.email,
+        email: payload.email.toLowerCase().trim(),
         name: payload.name || payload.email.split("@")[0],
         avatar: payload.picture,
         provider: "google",
@@ -76,10 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithEmail = (email: string, name?: string) => {
+  const loginWithGoogleUser = (data: { email: string; name: string; avatar?: string }) => {
     const newUser: User = {
-      email: email.trim().toLowerCase(),
-      name: name?.trim() || email.split("@")[0],
+      email: data.email.toLowerCase().trim(),
+      name: data.name || data.email.split("@")[0],
+      avatar: data.avatar,
+      provider: "google",
+    };
+    setUser(newUser);
+    localStorage.setItem("lyra_user", JSON.stringify(newUser));
+    router.push("/dashboard");
+  };
+
+  const loginWithEmail = (email: string, name?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const newUser: User = {
+      email: cleanEmail,
+      name: name?.trim() || cleanEmail.split("@")[0],
       provider: "email",
     };
     setUser(newUser);
@@ -94,7 +109,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, loginWithEmail, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        loginWithGoogle,
+        loginWithGoogleUser,
+        loginWithEmail,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

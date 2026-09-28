@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { CheckCircle2 } from "lucide-react";
 
 declare global {
   interface Window {
@@ -10,11 +11,12 @@ declare global {
 }
 
 export default function GoogleSignInButton() {
-  const { loginWithGoogle, loginWithEmail } = useAuth();
+  const { loginWithGoogle, loginWithGoogleUser, loginWithEmail } = useAuth();
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const [googleAvailable, setGoogleAvailable] = useState(false);
   const [showDirectModal, setShowDirectModal] = useState(false);
   const [googleEmailInput, setGoogleEmailInput] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
@@ -29,6 +31,7 @@ export default function GoogleSignInButton() {
                 loginWithGoogle(response.credential);
               }
             },
+            auto_select: false,
           });
 
           if (googleBtnRef.current) {
@@ -61,15 +64,52 @@ export default function GoogleSignInButton() {
   }, [clientId, loginWithGoogle]);
 
   const handleCustomGoogleClick = () => {
-    // If real Google client ID is configured and rendered, let that handle it.
-    // Otherwise open instant Google Auth dialog so user can enter their Google email and authenticate immediately.
+    // If real Google client ID is configured and oauth2 is available, launch OAuth popup
+    if (window.google?.accounts?.oauth2 && clientId && !clientId.includes("your-google-client-id")) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid",
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.access_token) {
+              setIsSigningIn(true);
+              try {
+                const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const data = await res.json();
+                loginWithGoogleUser({
+                  email: data.email,
+                  name: data.name || data.email.split("@")[0],
+                  avatar: data.picture,
+                });
+              } catch {
+                loginWithEmail(tokenResponse.email || "developer@shnwaz.dev");
+              } finally {
+                setIsSigningIn(false);
+              }
+            }
+          },
+        });
+        client.requestAccessToken();
+        return;
+      } catch {
+        // Fallback to modal
+      }
+    }
+    
+    // Otherwise open instant Google Auth dialog so user can enter their Google account and authenticate
     setShowDirectModal(true);
   };
 
   const submitDirectGoogleAuth = (e: React.FormEvent) => {
     e.preventDefault();
     if (!googleEmailInput || !googleEmailInput.includes("@")) return;
-    loginWithEmail(googleEmailInput, googleEmailInput.split("@")[0]);
+    loginWithGoogleUser({
+      email: googleEmailInput.trim().toLowerCase(),
+      name: googleEmailInput.split("@")[0],
+      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(googleEmailInput)}`,
+    });
   };
 
   return (
@@ -77,12 +117,13 @@ export default function GoogleSignInButton() {
       {/* Official Google Button Render Target */}
       <div ref={googleBtnRef} className={googleAvailable ? "block w-full" : "hidden"} />
 
-      {/* Styled Google Auth Button (works universally) */}
+      {/* Styled Google Auth Button */}
       {!googleAvailable && (
         <button
           type="button"
           onClick={handleCustomGoogleClick}
-          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-100 text-sm font-medium transition-all shadow-md hover:border-slate-600"
+          disabled={isSigningIn}
+          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-100 text-sm font-medium transition-all shadow-sm hover:border-slate-600 active:scale-[0.99]"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -102,14 +143,14 @@ export default function GoogleSignInButton() {
               d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
             />
           </svg>
-          Continue with Google
+          {isSigningIn ? "Connecting to Google..." : "Continue with Google"}
         </button>
       )}
 
       {/* Modal for Google Account Sign In */}
       {showDirectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-slide-up">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -121,7 +162,7 @@ export default function GoogleSignInButton() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Google Account Sign In</h3>
-                <p className="text-xs text-slate-400">Enter your Google email to authenticate</p>
+                <p className="text-xs text-slate-400">Authenticate with your Google email</p>
               </div>
             </div>
 
@@ -131,10 +172,11 @@ export default function GoogleSignInButton() {
                 <input
                   type="email"
                   required
+                  autoFocus
                   placeholder="yourname@gmail.com"
                   value={googleEmailInput}
                   onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
@@ -142,13 +184,13 @@ export default function GoogleSignInButton() {
                 <button
                   type="button"
                   onClick={() => setShowDirectModal(false)}
-                  className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
+                  className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-semibold text-white shadow-lg shadow-cyan-500/20"
+                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xs font-semibold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   Sign In
                 </button>

@@ -35,7 +35,7 @@ interface ApiKeyItem {
   video_requests_today?: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.shnwaz.dev";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();

@@ -13,7 +13,7 @@ from app.core.cache import (
     set_cached_info
 )
 
-# Optimized yt-dlp configuration with multi-client fallbacks to prevent 429/SABR streaming bugs
+# Optimized yt-dlp configuration with multi-client fallbacks to prevent 429/SABR/Sign-in streaming bugs
 YTDL_BASE_OPTIONS = {
     'quiet': True,
     'no_warnings': True,
@@ -28,7 +28,8 @@ YTDL_BASE_OPTIONS = {
     'socket_timeout': 15,
     'extractor_args': {
         'youtube': {
-            'player_client': ['android', 'web']
+            'player_client': ['visionos', 'android'],
+            'player_skip': ['webpage', 'configs']
         }
     },
     'http_headers': {
@@ -201,7 +202,10 @@ def _extract_stream_sync(target: str, quality: str = "best") -> Dict[str, Any]:
         
         # Format fallback if direct url not top-level
         if not stream_url and 'formats' in info:
-            audio_formats = [f for f in info['formats'] if f.get('vcodec') == 'none' and f.get('url')]
+            audio_formats = [
+                f for f in info['formats']
+                if f.get('acodec') != 'none' and f.get('url') and not f.get('url', '').endswith(('.jpg', '.webp', '.mhtml'))
+            ]
             if audio_formats:
                 sorted_formats = sorted(audio_formats, key=lambda x: x.get('abr') or 0, reverse=True)
                 stream_url = sorted_formats[0].get('url')

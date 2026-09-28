@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Music2, Github, Heart } from "lucide-react";
+import { Music2, Heart } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-slate-800/60 py-12 bg-slate-950/70">
+    <footer className="border-t border-slate-800/80 py-10 bg-slate-950/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-2.5 font-bold text-lg">
           <div className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600">
@@ -25,15 +25,6 @@ export default function Footer() {
           <Link href="/dashboard" className="hover:text-cyan-400 transition-colors">
             Console
           </Link>
-          <a
-            href="https://github.com/Sahanwajdev/Lyra"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-white transition-colors flex items-center gap-1"
-          >
-            <Github className="w-4 h-4" />
-            GitHub
-          </a>
         </div>
       </div>
     </footer>
