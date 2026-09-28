@@ -2,7 +2,7 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 
 from app.config import settings
 from app.db.database import init_db
@@ -55,22 +55,6 @@ app.include_router(info_router, prefix=settings.API_V1_STR)
 app.include_router(keys_router, prefix=settings.API_V1_STR)
 app.include_router(stats_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
+@app.get("/", response_class=PlainTextResponse)
 async def root():
-    return {
-        "name": "Lyra Cloud API",
-        "tagline": "The Fastest Music Streaming & Download API for Telegram Bots",
-        "version": settings.VERSION,
-        "status": "operational",
-        "documentation": "/docs",
-        "endpoints": {
-            "search": "/api/v1/search?query={song}&api_key={key}",
-            "stream": "/api/v1/stream?id={video_id}&api_key={key}",
-            "proxy_audio": "/api/v1/stream/raw?id={video_id}&api_key={key}",
-            "download": "/api/v1/download?id={video_id}&api_key={key}",
-            "info": "/api/v1/info?id={video_id}&api_key={key}",
-            "keys_generate": "/api/v1/keys/generate",
-            "keys_usage": "/api/v1/keys/usage?key={key}",
-            "system_stats": "/api/v1/stats"
-        }
-    }
+    return "Lyra 😊✨🎶"
