@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: lyra-api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - ADMIN_SECRET=lyra_super_secret_production_key_2026
+    volumes:
+      - ./api/data:/app/data
+
+  console:
+    build:
+      context: ./console
+      dockerfile: Dockerfile
+    container_name: lyra-console
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
