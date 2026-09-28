@@ -22,7 +22,7 @@
 
 ### 1. Run with Docker Compose (Recommended)
 ```bash
-git clone https://github.com/shnwazdev/Lyra.git
+git clone https://github.com/Sahanwajdev/Lyra.git
 cd Lyra
 docker compose up -d --build
 ```

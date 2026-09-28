@@ -26,7 +26,7 @@ export default function Footer() {
             Console
           </Link>
           <a
-            href="https://github.com/shnwazdev/Lyra"
+            href="https://github.com/Sahanwajdev/Lyra"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-white transition-colors flex items-center gap-1"
