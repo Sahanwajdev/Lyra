@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 class SongItem(BaseModel):
     id: str
@@ -27,7 +27,7 @@ class StreamResponse(BaseModel):
     thumbnail: str
     stream_url: str
     format: str
-    bitrate: Optional[int] = 128
+    bitrate: Optional[Union[int, float]] = 128
     filesize: Optional[int] = 0
     proxy_stream_url: str
     latency_ms: float
@@ -35,7 +35,7 @@ class StreamResponse(BaseModel):
 class KeyCreateRequest(BaseModel):
     email: str
     name: Optional[str] = "Developer"
-    plan: Optional[str] = "free"
+    plan: Optional[str] = "unlimited"
 
 class KeyResponse(BaseModel):
     status: str = "success"
@@ -58,13 +58,6 @@ class KeyUsageResponse(BaseModel):
     daily_video_limit: int
     expires_at: str
     percent_used: float
-
-class PlanDetails(BaseModel):
-    name: str
-    daily_requests: int
-    daily_video_requests: int
-    price: int
-    validity_days: int
 
 class SystemStatsResponse(BaseModel):
     status: str = "success"

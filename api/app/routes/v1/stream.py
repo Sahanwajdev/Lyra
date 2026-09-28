@@ -13,7 +13,7 @@ router = APIRouter(prefix="/stream", tags=["Streaming"])
 async def get_stream_url(
     request: Request,
     id: str = Query(..., description="YouTube Video ID or full YouTube URL"),
-    quality: str = Query("best", regex="^(best|high|low)$", description="Audio stream quality"),
+    quality: str = Query("best", pattern="^(best|high|low)$", description="Audio stream quality"),
     auth: Dict[str, Any] = Depends(verify_api_key)
 ):
     start_time = time.perf_counter()
@@ -28,9 +28,13 @@ async def get_stream_url(
     
     # Construct direct proxy URL
     base_url = str(request.base_url).rstrip("/")
-    api_key = request.state.key_info.get("key", "")
+    api_key = request.state.key_info.get("key", "unlimited")
     proxy_url = f"{base_url}/api/v1/stream/raw?id={vid_id}&quality={quality}&api_key={api_key}"
     
+    bitrate_val = data.get("bitrate", 128)
+    if isinstance(bitrate_val, (int, float)):
+        bitrate_val = round(bitrate_val, 1)
+
     return {
         "status": "success",
         "id": vid_id,
@@ -41,7 +45,7 @@ async def get_stream_url(
         "thumbnail": data.get("thumbnail", ""),
         "stream_url": data.get("stream_url", ""),
         "format": data.get("format", "m4a"),
-        "bitrate": data.get("bitrate", 128),
+        "bitrate": bitrate_val,
         "filesize": data.get("filesize", 0),
         "proxy_stream_url": proxy_url,
         "latency_ms": latency
@@ -51,12 +55,9 @@ async def get_stream_url(
 async def get_raw_audio_stream(
     request: Request,
     id: str = Query(..., description="YouTube Video ID or full YouTube URL"),
-    quality: str = Query("best", regex="^(best|high|low)$"),
+    quality: str = Query("best", pattern="^(best|high|low)$"),
     auth: Dict[str, Any] = Depends(verify_api_key)
 ):
-    """
-    Direct piped audio stream. Perfect for Telegram bots needing an unblocked audio stream.
-    """
     vid_id = extract_video_id(id)
     try:
         return await proxy_audio_stream(vid_id, quality=quality)

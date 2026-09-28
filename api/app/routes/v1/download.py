@@ -14,8 +14,8 @@ router = APIRouter(prefix="/download", tags=["Download"])
 async def download_song(
     request: Request,
     id: str = Query(..., description="YouTube Video ID or full YouTube URL"),
-    format: str = Query("m4a", regex="^(m4a|mp3|webm)$", description="Target audio file format"),
-    quality: str = Query("best", regex="^(best|high|low)$"),
+    format: str = Query("m4a", pattern="^(m4a|mp3|webm)$", description="Target audio file format"),
+    quality: str = Query("best", pattern="^(best|high|low)$"),
     auth: Dict[str, Any] = Depends(lambda r: verify_api_key(r, is_video=False))
 ):
     vid_id = extract_video_id(id)
