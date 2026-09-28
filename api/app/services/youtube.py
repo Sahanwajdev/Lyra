@@ -22,13 +22,13 @@ YTDL_BASE_OPTIONS = {
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
-    'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
+    'format': 'bestaudio/best',
     'youtube_include_dash_manifest': False,
     'youtube_include_hls_manifest': False,
     'socket_timeout': 15,
     'extractor_args': {
         'youtube': {
-            'player_client': ['mweb', 'web', 'ios', 'android']
+            'player_client': ['android', 'web']
         }
     },
     'http_headers': {

@@ -56,5 +56,7 @@ app.include_router(keys_router, prefix=settings.API_V1_STR)
 app.include_router(stats_router, prefix=settings.API_V1_STR)
 
 @app.get("/", response_class=PlainTextResponse)
+@app.get("/api", response_class=PlainTextResponse)
+@app.get("/api/index.py", response_class=PlainTextResponse)
 async def root():
     return "Lyra 😊✨🎶"

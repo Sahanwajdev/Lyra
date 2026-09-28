@@ -17,7 +17,7 @@ class Settings:
     DEFAULT_PUBLIC_KEY: str = "lyra_live_unlimited_access"
     
     # Database
-    DATA_DIR: str = os.getenv("DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "data"))
+    DATA_DIR: str = os.getenv("DATA_DIR", "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "..", "data"))
     DB_PATH: str = os.path.join(DATA_DIR, "lyra.db")
     
     # Caching TTLs in seconds
