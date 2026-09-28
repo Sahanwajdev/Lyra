@@ -1,7 +1,7 @@
 import os
 import aiosqlite
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from app.config import settings
 
 async def init_db():
@@ -13,9 +13,9 @@ async def init_db():
                 key TEXT UNIQUE NOT NULL,
                 user_email TEXT NOT NULL,
                 user_name TEXT,
-                plan TEXT DEFAULT 'free',
-                daily_requests_limit INTEGER DEFAULT 100,
-                daily_video_limit INTEGER DEFAULT 5,
+                plan TEXT DEFAULT 'unlimited',
+                daily_requests_limit INTEGER DEFAULT 999999999,
+                daily_video_limit INTEGER DEFAULT 999999999,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 expires_at TIMESTAMP NOT NULL,
                 is_active BOOLEAN DEFAULT 1
@@ -43,29 +43,7 @@ async def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Insert a default demo/test key if not exists
-        default_demo_key = "lyra_free_demo_test_key_2026"
-        cursor = await db.execute("SELECT id FROM api_keys WHERE key = ?", (default_demo_key,))
-        row = await cursor.fetchone()
-        if not row:
-            now = datetime.now(timezone.utc)
-            expires = now + timedelta(days=365)
-            await db.execute("""
-                INSERT INTO api_keys (key, user_email, user_name, plan, daily_requests_limit, daily_video_limit, created_at, expires_at, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                default_demo_key,
-                "demo@lyra.cloud",
-                "Demo User",
-                "pro",
-                25000,
-                1250,
-                now.isoformat(),
-                expires.isoformat(),
-                1
-            ))
-            await db.commit()
+        await db.commit()
 
 async def get_db_connection() -> aiosqlite.Connection:
     return await aiosqlite.connect(settings.DB_PATH)
@@ -82,6 +60,23 @@ async def get_key_data(key: str) -> Optional[Dict[str, Any]]:
         if not row:
             return None
         return dict(row)
+
+async def get_user_keys(email: str) -> List[Dict[str, Any]]:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    async with aiosqlite.connect(settings.DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT k.id, k.key, k.user_email, k.user_name, k.plan, k.daily_requests_limit, 
+                   k.daily_video_limit, k.created_at, k.expires_at, k.is_active,
+                   COALESCE(u.requests_count, 0) as requests_today,
+                   COALESCE(u.video_requests_count, 0) as video_requests_today
+            FROM api_keys k
+            LEFT JOIN key_usage u ON k.id = u.key_id AND u.usage_date = ?
+            WHERE k.user_email = ? AND k.is_active = 1
+            ORDER BY k.id DESC
+        """, (today, email))
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 async def check_and_increment_usage(key_id: int, is_video: bool = False) -> Dict[str, Any]:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

@@ -1,19 +1,24 @@
 import secrets
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Query, Request, HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, List
 import aiosqlite
 
 from app.config import settings
-from app.db.database import get_db_connection, get_key_data
+from app.db.database import get_db_connection, get_key_data, get_user_keys
 from app.core.cache import invalidate_key_cache
 from app.models.schemas import KeyCreateRequest, KeyResponse, KeyUsageResponse
 
 router = APIRouter(prefix="/keys", tags=["API Keys"])
 
-def generate_secure_key(prefix: str = "lyra") -> str:
-    token = secrets.token_urlsafe(24).replace("-", "").replace("_", "")
-    return f"{prefix}_{token}"
+def generate_lyra_key() -> str:
+    """
+    Generates API key in the format requested by user:
+    e.g. '8fLyra1d4a' (2 hex chars + 'Lyra' + 4 hex chars)
+    """
+    prefix = secrets.token_hex(1)  # e.g. '8f'
+    suffix = secrets.token_hex(2)  # e.g. '1d4a'
+    return f"{prefix}Lyra{suffix}"
 
 @router.get("/plans")
 async def list_plans():
@@ -22,30 +27,54 @@ async def list_plans():
         "plans": settings.PLANS
     }
 
+@router.get("/user")
+async def get_keys_for_user(
+    email: str = Query(..., description="User email to fetch generated keys for")
+):
+    clean_email = email.strip().lower()
+    keys = await get_user_keys(clean_email)
+    return {
+        "status": "success",
+        "email": clean_email,
+        "count": len(keys),
+        "keys": keys
+    }
+
 @router.post("/generate", response_model=KeyResponse)
 async def generate_key(req: KeyCreateRequest):
-    plan_name = req.plan.lower() if req.plan else "free"
-    plan_info = settings.PLANS.get(plan_name)
-    if not plan_info:
-        raise HTTPException(status_code=400, detail=f"Invalid plan '{req.plan}'. Available: {list(settings.PLANS.keys())}")
+    clean_email = req.email.strip().lower()
+    if not clean_email or "@" not in clean_email:
+        raise HTTPException(status_code=400, detail="A valid user email is required to generate an API key")
+
+    plan_name = req.plan.lower() if req.plan else "unlimited"
+    plan_info = settings.PLANS.get(plan_name) or settings.PLANS.get("free")
+    
+    # In Unlimited mode, all keys get 999,999,999 limits
+    req_limit = 999999999 if settings.UNLIMITED_MODE else plan_info.get("daily_requests", 100)
+    vid_limit = 999999999 if settings.UNLIMITED_MODE else plan_info.get("daily_video_requests", 5)
 
     now = datetime.now(timezone.utc)
-    validity_days = plan_info.get("validity_days", 30)
-    expires_at = now + timedelta(days=validity_days)
+    expires_at = now + timedelta(days=365) # 1 year validity
     
-    new_key = generate_secure_key()
-    
+    # Generate unique key in the exact format: 8fLyra1d4a
     async with aiosqlite.connect(settings.DB_PATH) as db:
+        while True:
+            new_key = generate_lyra_key()
+            cursor = await db.execute("SELECT id FROM api_keys WHERE key = ?", (new_key,))
+            existing = await cursor.fetchone()
+            if not existing:
+                break
+                
         await db.execute("""
             INSERT INTO api_keys (key, user_email, user_name, plan, daily_requests_limit, daily_video_limit, created_at, expires_at, is_active)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         """, (
             new_key,
-            req.email,
+            clean_email,
             req.name or "Developer",
             plan_name,
-            plan_info["daily_requests"],
-            plan_info["daily_video_requests"],
+            req_limit,
+            vid_limit,
             now.isoformat(),
             expires_at.isoformat()
         ))
@@ -54,11 +83,11 @@ async def generate_key(req: KeyCreateRequest):
     return {
         "status": "success",
         "key": new_key,
-        "user_email": req.email,
+        "user_email": clean_email,
         "user_name": req.name or "Developer",
         "plan": plan_name,
-        "daily_requests_limit": plan_info["daily_requests"],
-        "daily_video_limit": plan_info["daily_video_requests"],
+        "daily_requests_limit": req_limit,
+        "daily_video_limit": vid_limit,
         "expires_at": expires_at.isoformat(),
         "is_active": True
     }
@@ -101,16 +130,3 @@ async def get_usage(
         "expires_at": key_data["expires_at"],
         "percent_used": percent
     }
-
-@router.post("/revoke")
-async def revoke_key(
-    key: str = Query(..., description="API key to revoke")
-):
-    async with aiosqlite.connect(settings.DB_PATH) as db:
-        cursor = await db.execute("UPDATE api_keys SET is_active = 0 WHERE key = ?", (key,))
-        await db.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Key not found")
-
-    invalidate_key_cache(key)
-    return {"status": "success", "message": "API Key revoked successfully"}
