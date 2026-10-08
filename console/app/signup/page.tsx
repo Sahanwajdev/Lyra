@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Music2, ArrowLeft, Mail, Lock, User, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -15,7 +14,7 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    loginWithEmail(email, name);
+    loginWithEmail(email, name || "Developer");
   };
 
   return (
@@ -37,17 +36,6 @@ export default function SignupPage() {
           <p className="text-xs text-slate-400">
             Sign up to generate unlimited API keys and stream music in real time
           </p>
-        </div>
-
-        <div className="space-y-4">
-          <GoogleSignInButton />
-
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-800 w-full" />
-            <span className="bg-[#0b1220] px-3 text-[11px] text-slate-400 uppercase tracking-wider font-medium">
-              Or with Email
-            </span>
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

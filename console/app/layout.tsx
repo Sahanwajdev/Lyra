@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,14 +9,14 @@ export const metadata: Metadata = {
   description: "High-performance song download and audio streaming API engineered for Telegram music bots and developers.",
 };
 
-const LAUDA_BANNER = `<!--
+const LAUDA_ART = `/*
 ========================================================================================
 
   _        _    _   _ _____            
- | |      / \  | | | |  __ \   /\      
- | |     / _ \ | | | | |  | | /  \     
- | |    / ___ \| |_| | |__| |/ /\ \    
- | |___/_/   \_\\___/|_____//_/  \_\   
+ | |      / \\  | | | |  __ \\   /\\      
+ | |     / _ \\ | | | | |  | | /  \\     
+ | |    / ___ \\| |_| | |__| |/ /\\ \\    
+ | |___/_/   \\_\\\\___/|_____//_/  \\_\\   
 
  ██╗      █████╗ ██╗   ██╗██████╗  █████╗ 
  ██║     ██╔══██╗██║   ██║██╔══██╗██╔══██╗
@@ -27,7 +26,7 @@ const LAUDA_BANNER = `<!--
  ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝
 
 ========================================================================================
--->`;
+*/`;
 
 export default function RootLayout({
   children,
@@ -36,26 +35,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `/*
-========================================================================================
-
-  _        _    _   _ _____            
- | |      / \  | | | |  __ \   /\      
- | |     / _ \ | | | | |  | | /  \     
- | |    / ___ \| |_| | |__| |/ /\ \    
- | |___/_/   \_\\___/|_____//_/  \_\   
-
-========================================================================================
-*/`,
-          }}
-        />
-      </head>
+      <head />
       <body className="min-h-screen flex flex-col bg-[#030712] text-slate-100 antialiased">
-        <div dangerouslySetInnerHTML={{ __html: LAUDA_BANNER }} />
+        <noscript id="lyra-banner">
+          {LAUDA_ART}
+        </noscript>
         <AuthProvider>
           <Navbar />
           <main className="flex-1">{children}</main>

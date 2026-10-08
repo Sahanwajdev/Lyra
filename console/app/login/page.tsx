@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Music2, ArrowLeft, Mail, Lock, Sparkles } from "lucide-react";
+import { Music2, ArrowLeft, Mail, Lock, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +14,10 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email) return;
     loginWithEmail(email);
+  };
+
+  const handleDemoLogin = () => {
+    loginWithEmail("developer@shnwaz.dev", "Lyra Developer");
   };
 
   return (
@@ -32,22 +35,10 @@ export default function LoginPage() {
           <div className="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md mb-1">
             <Music2 className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white">Welcome Back</h1>
+          <h1 className="text-2xl font-extrabold text-white">Developer Console Sign In</h1>
           <p className="text-xs text-slate-400">
             Sign in to manage your real API keys and view usage analytics
           </p>
-        </div>
-
-        {/* Google Auth Button */}
-        <div className="space-y-4">
-          <GoogleSignInButton />
-
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-800 w-full" />
-            <span className="bg-[#0b1220] px-3 text-[11px] text-slate-400 uppercase tracking-wider font-medium">
-              Or with Email
-            </span>
-          </div>
         </div>
 
         {/* Email Login Form */}
@@ -88,11 +79,23 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wider uppercase shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wider uppercase shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
           >
             Sign In to Console
+            <ArrowRight className="w-4 h-4" />
           </button>
         </form>
+
+        <div className="pt-2 border-t border-slate-800/80">
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            className="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 hover:text-white font-medium text-xs transition-all flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            Quick Demo Sign In (1-Click)
+          </button>
+        </div>
 
         <div className="text-center text-xs text-slate-400">
           Don&apos;t have an account?{" "}

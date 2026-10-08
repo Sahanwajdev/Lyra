@@ -18,7 +18,6 @@ import {
   Check,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 interface ApiKeyItem {
   id: number;
@@ -38,7 +37,7 @@ interface ApiKeyItem {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.shnwaz.dev";
 
 export default function Dashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, loginWithEmail } = useAuth();
 
   const [keys, setKeys] = useState<ApiKeyItem[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(false);
@@ -184,13 +183,19 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3 pt-2">
-            <GoogleSignInButton />
             <Link
               href="/login"
-              className="w-full inline-flex items-center justify-center py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+              className="w-full inline-flex items-center justify-center py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wider uppercase shadow-md transition-all"
             >
-              Sign In with Email
+              Sign In to Console
             </Link>
+            <button
+              onClick={() => loginWithEmail("developer@shnwaz.dev", "Lyra Developer")}
+              className="w-full inline-flex items-center justify-center py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 hover:text-white font-medium text-xs transition-all gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              Quick Developer Access (1-Click)
+            </button>
           </div>
         </div>
       </div>

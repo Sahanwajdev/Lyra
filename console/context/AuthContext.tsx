@@ -7,14 +7,12 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  provider: "google" | "email";
+  provider: "email" | "developer";
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  loginWithGoogle: (credential: string) => void;
-  loginWithGoogleUser: (data: { email: string; name: string; avatar?: string }) => void;
   loginWithEmail: (email: string, name?: string) => void;
   logout: () => void;
 }
@@ -22,28 +20,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  loginWithGoogle: () => {},
-  loginWithGoogleUser: () => {},
   loginWithEmail: () => {},
   logout: () => {},
 });
-
-// Helper to decode JWT payload without external library
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -63,39 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginWithGoogle = (credential: string) => {
-    const payload = parseJwt(credential);
-    if (payload && payload.email) {
-      const newUser: User = {
-        email: payload.email.toLowerCase().trim(),
-        name: payload.name || payload.email.split("@")[0],
-        avatar: payload.picture,
-        provider: "google",
-      };
-      setUser(newUser);
-      localStorage.setItem("lyra_user", JSON.stringify(newUser));
-      router.push("/dashboard");
-    }
-  };
-
-  const loginWithGoogleUser = (data: { email: string; name: string; avatar?: string }) => {
-    const newUser: User = {
-      email: data.email.toLowerCase().trim(),
-      name: data.name || data.email.split("@")[0],
-      avatar: data.avatar,
-      provider: "google",
-    };
-    setUser(newUser);
-    localStorage.setItem("lyra_user", JSON.stringify(newUser));
-    router.push("/dashboard");
-  };
-
   const loginWithEmail = (email: string, name?: string) => {
     const cleanEmail = email.trim().toLowerCase();
     const newUser: User = {
       email: cleanEmail,
       name: name?.trim() || cleanEmail.split("@")[0],
-      provider: "email",
+      provider: "developer",
     };
     setUser(newUser);
     localStorage.setItem("lyra_user", JSON.stringify(newUser));
@@ -113,8 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
-        loginWithGoogle,
-        loginWithGoogleUser,
         loginWithEmail,
         logout,
       }}

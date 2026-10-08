@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from typing import List, Dict, Any, Optional
 import httpx
@@ -22,21 +23,66 @@ YTDL_BASE_OPTIONS = {
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
-    'format': 'bestaudio/best',
+    'format': 'ba/b/18/140/251/bestaudio/best',
     'youtube_include_dash_manifest': False,
     'youtube_include_hls_manifest': False,
     'socket_timeout': 15,
     'extractor_args': {
         'youtube': {
-            'player_client': ['visionos', 'android'],
+            'player_client': ['android'],
             'player_skip': ['webpage', 'configs']
         }
     },
     'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14; US) gzip',
         'Accept-Language': 'en-US,en;q=0.9',
     }
 }
+
+try:
+    from app.services.youtube_cookies import YOUTUBE_COOKIES_DATA
+except Exception:
+    YOUTUBE_COOKIES_DATA = ""
+
+def _ensure_cookie_file() -> Optional[str]:
+    # Target /tmp on serverless or local directory
+    target_path = "/tmp/cookies.txt" if os.path.exists("/tmp") else os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
+    
+    # If file exists and is populated, return it
+    if os.path.exists(target_path) and os.path.getsize(target_path) > 100:
+        return target_path
+
+    # Try candidate paths
+    candidate_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cookies.txt"),
+        os.path.join(os.getcwd(), "cookies.txt"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt"),
+    ]
+    for cp in candidate_paths:
+        if os.path.exists(cp) and os.path.getsize(cp) > 100:
+            if target_path != cp:
+                try:
+                    import shutil
+                    shutil.copyfile(cp, target_path)
+                    return target_path
+                except Exception:
+                    return cp
+            return cp
+
+    # Write from embedded YOUTUBE_COOKIES_DATA
+    if YOUTUBE_COOKIES_DATA:
+        try:
+            with open(target_path, "w", encoding="utf-8") as f:
+                f.write(YOUTUBE_COOKIES_DATA)
+            return target_path
+        except Exception:
+            pass
+
+    return None
+
+# cookie_file = _ensure_cookie_file()
+# if cookie_file:
+#     YTDL_BASE_OPTIONS['cookiefile'] = cookie_file
 
 INNERTUBE_URL = "https://www.youtube.com/youtubei/v1/search"
 INNERTUBE_HEADERS = {
@@ -178,10 +224,13 @@ def _extract_stream_sync(target: str, quality: str = "best") -> Dict[str, Any]:
         url = f"ytsearch1:{target}"
     
     opts = dict(YTDL_BASE_OPTIONS)
+    # cf = _ensure_cookie_file()
+    # if cf:
+    #     opts['cookiefile'] = cf
     if quality == "high":
-        opts['format'] = 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best'
+        opts['format'] = 'ba/b/18/140/251/bestaudio/best'
     elif quality == "low":
-        opts['format'] = 'worstaudio[ext=m4a]/worstaudio/worst'
+        opts['format'] = 'worstaudio[ext=m4a]/18/worstaudio/worst'
         
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -204,10 +253,12 @@ def _extract_stream_sync(target: str, quality: str = "best") -> Dict[str, Any]:
         if not stream_url and 'formats' in info:
             audio_formats = [
                 f for f in info['formats']
-                if f.get('acodec') != 'none' and f.get('url') and not f.get('url', '').endswith(('.jpg', '.webp', '.mhtml'))
+                if f.get('url') and not f.get('url', '').endswith(('.jpg', '.webp', '.mhtml'))
             ]
             if audio_formats:
-                sorted_formats = sorted(audio_formats, key=lambda x: x.get('abr') or 0, reverse=True)
+                with_acodec = [f for f in audio_formats if f.get('acodec') and f.get('acodec') != 'none']
+                candidates = with_acodec if with_acodec else audio_formats
+                sorted_formats = sorted(candidates, key=lambda x: x.get('abr') or x.get('tbr') or 0, reverse=True)
                 stream_url = sorted_formats[0].get('url')
                 
         if not stream_url:
@@ -246,9 +297,26 @@ async def get_audio_stream(video_id_or_query: str, quality: str = "best") -> Dic
     if cached:
         return cached
 
-    # Resolve stream in thread pool
-    result = await asyncio.to_thread(_extract_stream_sync, video_id_or_query, quality)
-    
+    result = None
+    ytdl_error = None
+
+    # 1. Try yt-dlp extraction
+    try:
+        result = await asyncio.to_thread(_extract_stream_sync, video_id_or_query, quality)
+    except Exception as e:
+        ytdl_error = str(e)
+
+    # 2. Fallback to ultra-fast CDN resolver if yt-dlp was blocked or failed
+    if not result or not result.get("stream_url"):
+        try:
+            from app.services.stream_resolver import resolve_saavn_stream
+            result = await asyncio.to_thread(resolve_saavn_stream, video_id_or_query, quality)
+        except Exception as e:
+            pass
+
+    if not result or not result.get("stream_url"):
+        raise ValueError(f"Unable to extract audio stream: {ytdl_error or 'Stream resolution failed'}")
+
     # Cache under both query and video ID
     set_cached_stream(video_id_or_query, quality, result)
     if result.get("id"):
